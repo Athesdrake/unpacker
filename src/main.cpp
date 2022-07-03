@@ -57,6 +57,22 @@ template <> struct fmt::formatter<swf::DoABCTag> {
     }
 };
 
+bool write_binaries(
+    std::ostream& file, std::vector<std::string> order,
+    std::unordered_map<std::string, swf::DefineBinaryDataTag*> binaries) {
+    for (auto& name : order) {
+        const auto& it = binaries.find(name);
+        if (it == binaries.end()) {
+            utils::log_error("Unable to find binary with name: {}", name);
+            return false;
+        }
+
+        auto data = it->second->getData();
+        file.write(reinterpret_cast<const char*>(data->raw()), data->size());
+    }
+    return true;
+}
+
 void download(std::string url, std::vector<uint8_t>& buffer) {
     auto r = cpr::Get(
         cpr::Url { url }, cpr::WriteCallback([&buffer](std::string data, intptr_t userdata) {
@@ -98,15 +114,18 @@ int main(int argc, char const* argv[]) {
     utils::TimePoints tps = { { "start", utils::now() } };
 
     std::unique_ptr<swf::StreamReader> stream;
-    std::vector<uint8_t> download_buffer;
+    std::vector<uint8_t> buffer;
 
     auto action = fmt::format("{} file", is_url ? "Downloading" : "Reading)");
     utils::log_info("{} {}. ", action, input);
 
     try {
         if (is_url) {
-            download(input, download_buffer);
-            stream = std::make_unique<swf::StreamReader>(download_buffer);
+            download(input, buffer);
+            stream = std::make_unique<swf::StreamReader>(buffer);
+        } else if (input == "-") {
+            utils::read_from_stdin(buffer);
+            stream = std::make_unique<swf::StreamReader>(buffer);
         } else {
             stream = std::unique_ptr<swf::StreamReader>(swf::StreamReader::fromfile(input));
         }
@@ -142,18 +161,18 @@ int main(int argc, char const* argv[]) {
     utils::log_info("Writing to file {} ", output);
 
     // Write binaries in the right order to the output file
-    std::ofstream file(output, std::ios::binary);
-    for (auto& name : order) {
-        const auto& it = binaries.find(name);
-        if (it == binaries.end()) {
-            utils::log_error("Unable to find binary with name: {}", name);
-            return 2;
-        }
+    if (output == "-") {
+        if (std::ferror(std::freopen(nullptr, "wb", stdout)))
+            throw std::runtime_error(std::strerror(errno));
 
-        auto data = it->second->getData();
-        file.write(reinterpret_cast<const char*>(data->raw()), data->size());
+        if (!write_binaries(std::cout, order, binaries))
+            return 2;
+    } else {
+        std::ofstream file(output, std::ios::binary);
+        if (!write_binaries(file, order, binaries))
+            return 2;
     }
-    file.close();
+
     utils::log_done(tps, "Writing to file");
 
     if (verbosity > 1) {
