@@ -1,5 +1,6 @@
 #pragma once
 #include <abc/parser/Parser.hpp>
+#include <unordered_map>
 
 using namespace swf::abc::parser;
 

@@ -21,7 +21,7 @@ double elapsled(TimePoint start, TimePoint stop) {
 double elapsled(TimePoint tp) { return elapsled(tp, now()); }
 
 void read_from_stdin(std::vector<uint8_t>& file) {
-    std::freopen(nullptr, "rb", stdin);
+    (void)!std::freopen(nullptr, "rb", stdin);
     if (std::ferror(stdin))
         throw std::runtime_error(std::strerror(errno));
 

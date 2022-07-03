@@ -4,7 +4,7 @@
 #include <swflib.hpp>
 
 using namespace swf::abc::parser;
-using AbcFile = typename swf::abc::AbcFile;
+using AbcFile = swf::abc::AbcFile;
 
 constexpr const char* version = "0.1.0";
 
