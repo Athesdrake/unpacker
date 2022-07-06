@@ -1,0 +1,22 @@
+FROM athes/swflib:alpine as build-stage
+
+ARG VCPKG_TOOLCHAIN="-DCMAKE_TOOLCHAIN_FILE=/vcpkg/scripts/buildsystems/vcpkg.cmake"
+ARG SWFLIB_STATIC=ON
+ARG BUILD_TYPE=Release
+
+WORKDIR /src/unpacker
+COPY . .
+
+WORKDIR /build/unpacker
+RUN apk add --no-cache perl && \
+    VCPKG_FORCE_SYSTEM_BINARIES=1 /vcpkg/vcpkg install cpr fmt && \
+    cmake /src/unpacker $VCPKG_TOOLCHAIN -DSWFLIB_STATIC=$SWFLIB_STATIC -DCMAKE_BUILD_TYPE=$BUILD_TYPE && \
+    cmake --build . && \
+    cmake --install . --strip
+
+FROM alpine:latest as runtime
+
+# Install runtime requirements
+RUN apk add --no-cache ca-certificates libstdc++
+
+COPY --from=build-stage /usr/local/bin/unpacker /usr/local/bin/
