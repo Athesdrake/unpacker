@@ -11,6 +11,13 @@ add_subdirectory(src)
 find_package(cpr CONFIG REQUIRED)
 # find_package(argparse CONFIG REQUIRED)
 find_package(fmt CONFIG REQUIRED)
+
+option(SET_RPATH "Set runtime path to the ${CMAKE_INSTALL_PREFIX}/lib." ON)
+option(SWFLIB_STATIC "Link swflib statically instead of dynamic linking." ON)
+if(SWFLIB_STATIC)
+  find_package(ZLIB REQUIRED)
+  find_package(LibLZMA REQUIRED)
+endif()
 find_package(swflib CONFIG REQUIRED)
 
 # Argparse's version is broken on vcpkg
@@ -30,4 +37,15 @@ endif()
 target_link_libraries(unpacker PRIVATE argparse::argparse)
 target_link_libraries(unpacker PRIVATE cpr::cpr)
 target_link_libraries(unpacker PRIVATE fmt::fmt-header-only)
-target_link_libraries(unpacker PRIVATE swflib::swflib)
+
+if(SWFLIB_STATIC)
+  target_link_libraries(unpacker PRIVATE swflib::swflib-static)
+else()
+  target_link_libraries(unpacker PRIVATE swflib::swflib)
+  if(SET_RPATH)
+    set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
+  endif()
+endif()
+
+# Install
+install(TARGETS unpacker RUNTIME DESTINATION bin COMPONENT bin)
