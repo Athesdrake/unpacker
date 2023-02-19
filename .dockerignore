@@ -2,3 +2,6 @@
 !include/
 !src/
 !CMakeLists.txt
+!LICENSE
+!README.md
+!vcpkg.json

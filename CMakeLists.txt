@@ -1,4 +1,11 @@
 cmake_minimum_required(VERSION 3.14)
+
+option(SET_RPATH "Set runtime path to the ${CMAKE_INSTALL_PREFIX}/lib." ON)
+option(SWFLIB_STATIC "Link swflib statically instead of dynamic linking." ON)
+if(SWFLIB_STATIC)
+  list(APPEND VCPKG_MANIFEST_FEATURES "static")
+endif()
+
 project(unpacker CXX)
 
 set(CMAKE_CXX_STANDARD 17)
@@ -12,8 +19,6 @@ find_package(cpr CONFIG REQUIRED)
 find_package(argparse CONFIG REQUIRED)
 find_package(fmt CONFIG REQUIRED)
 
-option(SET_RPATH "Set runtime path to the ${CMAKE_INSTALL_PREFIX}/lib." ON)
-option(SWFLIB_STATIC "Link swflib statically instead of dynamic linking." ON)
 if(SWFLIB_STATIC)
   find_package(ZLIB REQUIRED)
   find_package(LibLZMA REQUIRED)
