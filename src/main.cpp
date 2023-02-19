@@ -165,6 +165,10 @@ int main(int argc, char const* argv[]) {
     auto binaries = get_binaries(movie);
 
     utils::log_done(tps, "Resolving order");
+    if (order.empty()) {
+        utils::log_error("Unable to resolve binaries order. Is it already unpacked?\n");
+        return 2;
+    }
     utils::log_info("Order: {}\n", fmt::join(order, ", "));
     utils::log_info("Writing to file {} ", output);
 
