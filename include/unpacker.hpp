@@ -6,7 +6,7 @@
 using namespace swf::abc::parser;
 using AbcFile = swf::abc::AbcFile;
 
-constexpr const char* version = "0.1.0";
+constexpr const char* version = "0.1.1";
 
 bool match_target(
     StringFinder& finder, std::string& target, std::unordered_map<uint32_t, char>& methods);
