@@ -9,7 +9,7 @@ add_subdirectory(src)
 
 # Find dependencies
 find_package(cpr CONFIG REQUIRED)
-# find_package(argparse CONFIG REQUIRED)
+find_package(argparse CONFIG REQUIRED)
 find_package(fmt CONFIG REQUIRED)
 
 option(SET_RPATH "Set runtime path to the ${CMAKE_INSTALL_PREFIX}/lib." ON)
@@ -20,23 +20,8 @@ if(SWFLIB_STATIC)
 endif()
 find_package(swflib CONFIG REQUIRED)
 
-# Argparse's version is broken on vcpkg
-include(FetchContent)
-FetchContent_Declare(
-  argparse
-  GIT_REPOSITORY https://github.com/p-ranav/argparse.git
-  GIT_TAG v2.4)
-
-FetchContent_GetProperties(argparse)
-if(NOT argparse_POPULATED)
-  FetchContent_Populate(argparse)
-  add_subdirectory(${argparse_SOURCE_DIR} ${argparse_BINARY_DIR}
-                   EXCLUDE_FROM_ALL)
-endif()
-
-target_link_libraries(unpacker PRIVATE argparse::argparse)
-target_link_libraries(unpacker PRIVATE cpr::cpr)
-target_link_libraries(unpacker PRIVATE fmt::fmt-header-only)
+target_link_libraries(unpacker PRIVATE argparse::argparse cpr::cpr
+                                       fmt::fmt-header-only)
 
 if(SWFLIB_STATIC)
   target_link_libraries(unpacker PRIVATE swflib::swflib-static)
