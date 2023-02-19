@@ -1,11 +1,10 @@
 #include "unpacker.hpp"
 #include "utils.hpp"
+#include <argparse/argparse.hpp>
 #include <cpr/cpr.h>
 #include <fmt/format.h>
 #include <fstream>
 #include <iostream>
-#define ARGPARSE_LONG_VERSION_ARG_ONLY
-#include <argparse/argparse.hpp>
 
 using namespace swf::abc::parser;
 using namespace fmt::literals;
@@ -86,8 +85,17 @@ void download(std::string url, std::vector<uint8_t>& buffer) {
 
 int main(int argc, char const* argv[]) {
     int verbosity = 0;
-    arg::ArgumentParser program("unpacker", version);
+    arg::ArgumentParser program("unpacker", version, arg::default_arguments::help);
     program.add_description("Unpack Transformice SWF file.");
+    program.add_argument("-V", "--version")
+        .action([](const auto&) {
+            std::cout << version << std::endl;
+            std::exit(0);
+        })
+        .default_value(false)
+        .help("prints version information and exits")
+        .implicit_value(true)
+        .nargs(0);
     program.add_argument("-v", "--verbose")
         .help("Increase output verbosity. Verbose messages go to stderr.")
         .action([&verbosity](const auto& v) { ++verbosity; })
