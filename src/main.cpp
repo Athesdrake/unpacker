@@ -1,87 +1,13 @@
+#include "fmtswf.hpp"
 #include "unpacker.hpp"
 #include "utils.hpp"
 #include <argparse/argparse.hpp>
-#include <cpr/cpr.h>
-#include <fmt/format.h>
 #include <fstream>
 #include <iostream>
 
 using namespace swf::abc::parser;
 using namespace fmt::literals;
-namespace arg = argparse;
-
-template <> struct fmt::formatter<std::shared_ptr<swf::abc::AbcFile>> {
-    constexpr auto parse(format_parse_context& ctx) -> decltype(ctx.begin()) { return ctx.end(); }
-    template <typename FormatContext>
-    auto format(const std::shared_ptr<swf::abc::AbcFile>& abc, FormatContext& ctx) {
-        return format_to(
-            ctx.out(),
-            "\t[AbcFile] version {major}.{minor}"
-            "\n\t\t methods: {methods}"
-            "\n\t\t classes: {classes}"
-            "\n\t\t scripts: {scripts}"
-            "\n\t\t cpool:"
-            "\n\t\t\t integers: {integers}"
-            "\n\t\t\t uintegers: {uintegers}"
-            "\n\t\t\t doubles: {doubles}"
-            "\n\t\t\t strings: {strings}"
-            "\n\t\t\t namespaces: {namespaces}"
-            "\n\t\t\t ns_sets: {ns_sets}"
-            "\n\t\t\t multinames: {multinames}",
-            "methods"_a    = abc->methods.size(),
-            "classes"_a    = abc->classes.size(),
-            "scripts"_a    = abc->scripts.size(),
-            "integers"_a   = abc->cpool.integers.size(),
-            "uintegers"_a  = abc->cpool.uintegers.size(),
-            "doubles"_a    = abc->cpool.doubles.size(),
-            "strings"_a    = abc->cpool.strings.size(),
-            "namespaces"_a = abc->cpool.namespaces.size(),
-            "ns_sets"_a    = abc->cpool.ns_sets.size(),
-            "multinames"_a = abc->cpool.multinames.size(),
-            "major"_a      = abc->major_version,
-            "minor"_a      = abc->minor_version);
-    }
-};
-template <> struct fmt::formatter<swf::DoABCTag> {
-    constexpr auto parse(format_parse_context& ctx) -> decltype(ctx.begin()) { return ctx.end(); }
-    template <typename FormatContext> auto format(swf::DoABCTag& tag, FormatContext& ctx) {
-        return format_to(
-            ctx.out(),
-            "\t[{tagname}:0x{tagid:0>2x}] \"{name}\" lazy:{lazy}\n{abc}\n",
-            "abc"_a     = tag.abcfile,
-            "tagname"_a = tag.getTagName(),
-            "tagid"_a   = uint8_t(tag.getId()),
-            "name"_a    = tag.name,
-            "lazy"_a    = tag.is_lazy);
-    }
-};
-
-bool write_binaries(
-    std::ostream& file, std::vector<std::string> order,
-    std::unordered_map<std::string, swf::DefineBinaryDataTag*> binaries) {
-    for (auto& name : order) {
-        const auto& it = binaries.find(name);
-        if (it == binaries.end()) {
-            utils::log_error("Unable to find binary with name: {}", name);
-            return false;
-        }
-
-        auto data = it->second->getData();
-        file.write(reinterpret_cast<const char*>(data->raw()), data->size());
-    }
-    return true;
-}
-
-void download(std::string url, std::vector<uint8_t>& buffer) {
-    auto r = cpr::Get(
-        cpr::Url { url }, cpr::WriteCallback([&buffer](std::string data, intptr_t userdata) {
-            buffer.insert(buffer.end(), data.begin(), data.end());
-            return true;
-        }));
-
-    if (r.error.code != cpr::ErrorCode::OK)
-        throw std::runtime_error(r.error.message);
-}
+namespace arg   = argparse;
 
 int main(int argc, char const* argv[]) {
     int verbosity = 0;
@@ -120,22 +46,26 @@ int main(int argc, char const* argv[]) {
     const bool is_url = input.substr(0, 7) == "http://" || input.substr(0, 8) == "https://";
 
     utils::TimePoints tps = { { "start", utils::now() } };
+    std::unique_ptr<Unpacker> unp;
 
-    std::unique_ptr<swf::StreamReader> stream;
-    std::vector<uint8_t> buffer;
+    const auto& timeit = [&](std::string action, void (Unpacker::*func)()) {
+        utils::log_info("{}. ", action);
+        ((*unp).*func)();
+        utils::log_done(tps, action);
+    };
 
-    auto action = fmt::format("{} file", is_url ? "Downloading" : "Reading)");
+    auto action = fmt::format("{} file", is_url ? "Downloading" : "Reading");
     utils::log_info("{} {}. ", action, input);
 
     try {
         if (is_url) {
-            download(input, buffer);
-            stream = std::make_unique<swf::StreamReader>(buffer);
+            unp = std::make_unique<Unpacker>(input);
         } else if (input == "-") {
+            std::vector<uint8_t> buffer;
             utils::read_from_stdin(buffer);
-            stream = std::make_unique<swf::StreamReader>(buffer);
+            unp = std::make_unique<Unpacker>(buffer);
         } else {
-            stream = std::unique_ptr<swf::StreamReader>(swf::StreamReader::fromfile(input));
+            unp = std::make_unique<Unpacker>(swf::StreamReader::fromfile(input));
         }
     } catch (const std::exception& err) {
         utils::log_error("Error: {}\n", err.what());
@@ -145,47 +75,42 @@ int main(int argc, char const* argv[]) {
     utils::log_done(tps, action);
     utils::log_info(
         "File size: {}\n",
-        utils::fmt_unit({ "B", "kB", "MB", "GB" }, static_cast<double>(stream->size())));
-    utils::log_info("Parsing file. ");
+        utils::fmt_unit({ "B", "kB", "MB", "GB" }, static_cast<double>(unp->size())));
 
-    swf::Swf movie;
-    movie.read(*stream);
-
-    utils::log_done(tps, "Parsing file");
-
-    auto frame1 = movie.abcfiles.find("frame1");
-    if (frame1 == movie.abcfiles.end()) {
+    timeit("Parsing file", &Unpacker::read_movie);
+    if (!unp->has_frame1()) {
         utils::log_error("Invalid SWF: Frame1 is not available.\n");
         return 2;
     }
-    utils::log_info("Found frame1:\n{}\n", *frame1->second);
-    utils::log_info("Resolving order. ");
+    utils::log_info("Found frame1:\n{}\n", *unp->get_frame1());
 
-    auto order    = resolve_order(frame1->second->abcfile);
-    auto binaries = get_binaries(movie);
-
-    utils::log_done(tps, "Resolving order");
-    if (order.empty()) {
+    timeit("Resolving order", &Unpacker::resolve_order);
+    if (unp->order.empty()) {
         utils::log_error("Unable to resolve binaries order. Is it already unpacked?\n");
         return 2;
     }
-    utils::log_info("Order: {}\n", fmt::join(order, ", "));
+    utils::log_info("Order: {}\n", fmt::join(unp->order, ", "));
+
+    timeit("Resolving binaries", &Unpacker::resolve_binaries);
     utils::log_info("Writing to file {} ", output);
 
     // Write binaries in the right order to the output file
+    std::optional<std::string> missing_binary;
     if (output == "-") {
         if (std::ferror(std::freopen(nullptr, "wb", stdout)))
             throw std::runtime_error(std::strerror(errno));
 
-        if (!write_binaries(std::cout, order, binaries))
-            return 2;
+        missing_binary = unp->write_binaries(std::cout);
     } else {
         std::ofstream file(output, std::ios::binary);
-        if (!write_binaries(file, order, binaries))
-            return 2;
+        missing_binary = unp->write_binaries(file);
     }
 
     utils::log_done(tps, "Writing to file");
+    if (missing_binary) {
+        utils::log_error("Unable to find binary with name: {}", *missing_binary);
+        return 2;
+    }
 
     if (verbosity > 1) {
         utils::log("Timing stats:\n");

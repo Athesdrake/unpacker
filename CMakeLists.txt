@@ -10,8 +10,12 @@ project(unpacker CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 
+add_library(tfm.unpack SHARED "")
+add_library(athes::tfm::unpack ALIAS tfm.unpack)
+target_include_directories(tfm.unpack PUBLIC include)
+
 add_executable(unpacker)
-target_include_directories(unpacker PUBLIC include)
+add_subdirectory(lib)
 add_subdirectory(src)
 
 # Find dependencies
@@ -25,17 +29,18 @@ if(SWFLIB_STATIC)
 endif()
 find_package(swflib CONFIG REQUIRED)
 
-target_link_libraries(unpacker PRIVATE argparse::argparse cpr::cpr
-                                       fmt::fmt-header-only)
+target_link_libraries(tfm.unpack PRIVATE cpr::cpr)
 
 if(SWFLIB_STATIC)
-  target_link_libraries(unpacker PRIVATE swflib::swflib-static)
+  target_link_libraries(tfm.unpack PUBLIC swflib::swflib-static)
 else()
-  target_link_libraries(unpacker PRIVATE swflib::swflib)
+  target_link_libraries(tfm.unpack PUBLIC swflib::swflib)
   if(SET_RPATH)
     set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
   endif()
 endif()
 
+target_link_libraries(unpacker PRIVATE tfm.unpack fmt::fmt-header-only)
+
 # Install
-install(TARGETS unpacker RUNTIME DESTINATION bin COMPONENT bin)
+install(TARGETS tfm.unpack RUNTIME DESTINATION lib COMPONENT lib)

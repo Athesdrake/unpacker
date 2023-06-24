@@ -1,2 +1,1 @@
-target_sources(unpacker PRIVATE main.cpp string_finder.cpp utils.cpp
-                                unpacker.cpp)
+target_sources(unpacker PRIVATE main.cpp utils.cpp)
