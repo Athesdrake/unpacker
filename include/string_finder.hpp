@@ -2,6 +2,7 @@
 #include <abc/parser/Parser.hpp>
 #include <unordered_map>
 
+namespace athes::unpack {
 using namespace swf::abc::parser;
 
 class StringFinder {
@@ -19,3 +20,4 @@ public:
     void skip_string();
     std::string build(std::unordered_map<uint32_t, char> methods);
 };
+}

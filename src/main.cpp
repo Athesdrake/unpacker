@@ -7,15 +7,17 @@
 
 using namespace swf::abc::parser;
 using namespace fmt::literals;
+using namespace athes::unpack;
 namespace arg   = argparse;
+namespace utils = athes::utils;
 
 int main(int argc, char const* argv[]) {
     int verbosity = 0;
-    arg::ArgumentParser program("unpacker", version, arg::default_arguments::help);
+    arg::ArgumentParser program("unpacker", athes::unpack::version, arg::default_arguments::help);
     program.add_description("Unpack Transformice SWF file.");
     program.add_argument("-V", "--version")
         .action([](const auto&) {
-            std::cout << version << std::endl;
+            std::cout << athes::unpack::version << std::endl;
             std::exit(0);
         })
         .default_value(false)

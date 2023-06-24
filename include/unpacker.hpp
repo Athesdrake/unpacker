@@ -4,6 +4,7 @@
 #include <optional>
 #include <swflib.hpp>
 
+namespace athes::unpack {
 using namespace swf::abc::parser;
 using AbcFile = swf::abc::AbcFile;
 
@@ -48,3 +49,4 @@ bool match_target(
 
 std::string get_keymap(std::shared_ptr<AbcFile> abc, std::shared_ptr<Instruction> ins);
 std::unordered_map<uint32_t, char> get_methods(std::shared_ptr<AbcFile> abc, std::string keymap);
+}

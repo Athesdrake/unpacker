@@ -1,6 +1,7 @@
 #include "unpacker.hpp"
 #include <cpr/cpr.h>
 
+namespace athes::unpack {
 void download(std::string url, std::vector<uint8_t>& buffer) {
     auto r = cpr::Get(
         cpr::Url { url }, cpr::WriteCallback([&buffer](std::string data, intptr_t userdata) {

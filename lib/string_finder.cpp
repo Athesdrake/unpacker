@@ -1,5 +1,6 @@
 #include "string_finder.hpp"
 
+namespace athes::unpack {
 StringFinder::StringFinder(std::shared_ptr<Instruction> ins) : ins(ins) { }
 
 bool StringFinder::is_string() {
@@ -59,4 +60,5 @@ std::string StringFinder::build(std::unordered_map<uint32_t, char> methods) {
     }
 
     return str;
+}
 }
