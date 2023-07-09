@@ -55,8 +55,11 @@ void Unpacker::read_movie() {
 }
 
 void Unpacker::resolve_order() {
-    abc         = get_frame1()->abcfile;
-    auto parser = Parser(abc->methods[abc->classes[0].cinit]);
+    if (!has_frame1())
+        return;
+
+    abc = get_frame1()->abcfile;
+    Parser parser(abc->methods[abc->classes[0].cinit]);
     // Get the keymap from the cinit method
     // then resolve the methods return value
     resolve_keymap(parser.begin);
@@ -88,6 +91,9 @@ void Unpacker::resolve_order() {
 }
 
 void Unpacker::resolve_binaries() {
+    if (movie.symbol_class == nullptr)
+        return;
+
     const auto& symbols = movie.symbol_class->symbols;
     for (auto& tag : movie.binaries) {
         const auto& it = symbols.find(tag->charId);
