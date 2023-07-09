@@ -11,6 +11,8 @@ using namespace athes::unpack;
 namespace arg   = argparse;
 namespace utils = athes::utils;
 
+static utils::Logger logger;
+
 int main(int argc, char const* argv[]) {
     int verbosity = 0;
     arg::ArgumentParser program("unpacker", athes::unpack::version, arg::default_arguments::help);
@@ -38,11 +40,16 @@ int main(int argc, char const* argv[]) {
     try {
         program.parse_args(argc, argv);
     } catch (const std::runtime_error& err) {
-        utils::log_error("{}\n", err.what(), program.help().str());
+        logger.error("{}\n", err.what(), program.help().str());
         return 1;
     }
 
-    utils::log_level  = verbosity;
+    /* verbosity 0  -> warning
+                 1  -> info
+                 2> -> debug
+    */
+    logger.level = utils::LogLevel(std::max(3 - verbosity, 1) * 10);
+
     const auto input  = program.get("-i");
     const auto output = program.get("output");
     const bool is_url = input.substr(0, 7) == "http://" || input.substr(0, 8) == "https://";
@@ -51,13 +58,13 @@ int main(int argc, char const* argv[]) {
     std::unique_ptr<Unpacker> unp;
 
     const auto& timeit = [&](std::string action, void (Unpacker::*func)()) {
-        utils::log_info("{}. ", action);
+        logger.info("{}. ", action);
         ((*unp).*func)();
-        utils::log_done(tps, action);
+        logger.log_done(tps, action);
     };
 
     auto action = fmt::format("{} file", is_url ? "Downloading" : "Reading");
-    utils::log_info("{} {}. ", action, input);
+    logger.info("{} {}. ", action, input);
 
     try {
         if (is_url) {
@@ -70,31 +77,31 @@ int main(int argc, char const* argv[]) {
             unp = std::make_unique<Unpacker>(swf::StreamReader::fromfile(input));
         }
     } catch (const std::exception& err) {
-        utils::log_error("Error: {}\n", err.what());
+        logger.error("Error: {}\n", err.what());
         return 2;
     }
 
-    utils::log_done(tps, action);
-    utils::log_info(
+    logger.log_done(tps, action);
+    logger.info(
         "File size: {}\n",
         utils::fmt_unit({ "B", "kB", "MB", "GB" }, static_cast<double>(unp->size())));
 
     timeit("Parsing file", &Unpacker::read_movie);
     if (!unp->has_frame1()) {
-        utils::log_error("Invalid SWF: Frame1 is not available.\n");
+        logger.error("Invalid SWF: Frame1 is not available.\n");
         return 2;
     }
-    utils::log_info("Found frame1:\n{}\n", *unp->get_frame1());
+    logger.info("Found frame1:\n{}\n", *unp->get_frame1());
 
     timeit("Resolving order", &Unpacker::resolve_order);
     if (unp->order.empty()) {
-        utils::log_error("Unable to resolve binaries order. Is it already unpacked?\n");
+        logger.error("Unable to resolve binaries order. Is it already unpacked?\n");
         return 2;
     }
-    utils::log_info("Order: {}\n", fmt::join(unp->order, ", "));
+    logger.info("Order: {}\n", fmt::join(unp->order, ", "));
 
     timeit("Resolving binaries", &Unpacker::resolve_binaries);
-    utils::log_info("Writing to file {} ", output);
+    logger.info("Writing to file {} ", output);
 
     // Write binaries in the right order to the output file
     std::optional<std::string> missing_binary;
@@ -108,28 +115,12 @@ int main(int argc, char const* argv[]) {
         missing_binary = unp->write_binaries(file);
     }
 
-    utils::log_done(tps, "Writing to file");
+    logger.log_done(tps, "Writing to file");
     if (missing_binary) {
-        utils::log_error("Unable to find binary with name: {}", *missing_binary);
+        logger.error("Unable to find binary with name: {}", *missing_binary);
         return 2;
     }
 
-    if (verbosity > 1) {
-        utils::log("Timing stats:\n");
-
-        auto it   = tps.begin();
-        auto prev = &it->second;
-
-        while (++it != tps.end()) {
-            auto took = utils::elapsled(*prev, it->second);
-            utils::log(
-                " - {action}: {took}\n",
-                "action"_a = it->first,
-                "took"_a   = utils::fmt_unit({ "µs", "ms", "s" }, took, 1000));
-            prev = &it->second;
-        }
-        auto total = utils::elapsled(tps.front().second, tps.back().second);
-        utils::log("Total: {}\n", utils::fmt_unit({ "µs", "ms", "s" }, total, 1000));
-    }
+    logger.display_statistics(tps);
     return 0;
 }

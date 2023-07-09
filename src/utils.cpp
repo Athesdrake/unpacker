@@ -44,7 +44,28 @@ std::string get_unit(std::list<std::string> const& units, double& value, double 
     return *it;
 }
 std::string fmt_unit(std::list<std::string> const& units, double value, double factor) {
-    auto unit = get_unit(units, value, factor);
-    return fmt::format("{:.2f} {}", value, unit);
+    return fmt::format(
+        "{:.2f} {}",
+        fmt::styled(value, fmt::fg(fmt::color::dark_cyan) | fmt::emphasis::italic),
+        get_unit(units, value, factor));
+}
+
+void Logger::display_statistics(TimePoints& tps) {
+    if (this->enabled_for(LogLevel::DEBUG)) {
+        log("Timing stats:\n");
+
+        auto it   = tps.begin();
+        auto prev = &it->second;
+
+        while (++it != tps.end()) {
+            auto took = utils::elapsled(*prev, it->second);
+            log(" - {action}: {took}\n",
+                "action"_a = it->first,
+                "took"_a   = utils::fmt_unit({ "µs", "ms", "s" }, took, 1000));
+            prev = &it->second;
+        }
+        auto total = elapsled(tps.front().second, tps.back().second);
+        log("Total: {}\n", utils::fmt_unit({ "µs", "ms", "s" }, total, 1000));
+    }
 }
 }
