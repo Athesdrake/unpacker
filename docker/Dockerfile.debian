@@ -1,13 +1,12 @@
 FROM athes/swflib:debian-slim as build-stage
 
-ARG SWFLIB_STATIC=ON
 ARG CMAKE_BUILD_TYPE=Release
 
 WORKDIR /src/unpacker
 COPY . .
 
 WORKDIR /build/unpacker
-RUN env && cmake /src/unpacker -DSWFLIB_STATIC=$SWFLIB_STATIC && \
+RUN env && cmake /src/unpacker && \
     cmake --build . && \
     cmake --install . --strip
 

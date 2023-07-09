@@ -1,0 +1,6 @@
+get_filename_component(UNPACK_CMAKE_DIR ${CMAKE_CURRENT_LIST_FILE} PATH)
+set(UNPACK_INCLUDE_DIRS "@unpack_INCLUDE_DIRS@")
+
+if(NOT TARGET unpack)
+  include("${UNPACK_CMAKE_DIR}/unpackTargets.cmake")
+endif()

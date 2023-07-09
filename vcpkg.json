@@ -8,14 +8,5 @@
         "argparse",
         "cpr",
         "fmt"
-    ],
-    "features": {
-        "static": {
-            "description": "Use swflib-static",
-            "dependencies": [
-                "zlib",
-                "liblzma"
-            ]
-        }
-    }
+    ]
 }

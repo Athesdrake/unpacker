@@ -1,14 +1,13 @@
 FROM athes/swflib:alpine as build-stage
 
 ARG CMAKE_BUILD_TYPE=Release
-ARG SWFLIB_STATIC=ON
 
 WORKDIR /src/unpacker
 COPY . .
 
 WORKDIR /build/unpacker
 RUN apk add --no-cache perl && \
-    cmake /src/unpacker -DSWFLIB_STATIC=$SWFLIB_STATIC && \
+    cmake /src/unpacker && \
     cmake --build . && \
     cmake --install . --strip
 
