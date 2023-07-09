@@ -1,5 +1,6 @@
 #include "unpacker.hpp"
 #include <cpr/cpr.h>
+#include <cstring>
 
 namespace athes::unpack {
 void download(std::string url, std::vector<uint8_t>& buffer) {
@@ -30,6 +31,32 @@ Unpacker::Unpacker(std::string url) : buffer() {
     stream   = std::make_unique<swf::StreamReader>(buffer);
     order    = {};
     binaries = {};
+}
+
+swf::StreamWriter Unpacker::unpack() {
+    swf::StreamWriter writer;
+    read_movie();
+    resolve_order();
+    resolve_binaries();
+    write_binaries(writer);
+    return writer;
+}
+
+bool Unpacker::unpack(swf::Swf& movie, std::unique_ptr<swf::StreamReader>& stream) {
+    auto writer = unpack();
+    if (writer.size() == 0) {
+        // file was not unpacked
+        // move the movie, as we didn't unpack it
+        // move also the stream back, as we might still have references to the data from the movie
+        movie  = std::move(this->movie);
+        stream = std::move(this->stream);
+        return false;
+    }
+
+    uint8_t* buffer = new uint8_t[writer.size()];
+    std::memcpy(buffer, writer.get_buffer(), writer.size());
+    stream = std::make_unique<swf::StreamReader>(buffer, buffer + writer.size());
+    return true;
 }
 
 const size_t Unpacker::size() {

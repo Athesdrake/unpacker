@@ -23,6 +23,16 @@ public:
     bool has_frame1();
     swf::DoABCTag* get_frame1();
 
+    /**
+     * Unpack the movie if needed and store the result into the params.
+     * Return true when the file was successfully unpacked.
+     */
+    bool unpack(swf::Swf& movie, std::unique_ptr<swf::StreamReader>& stream);
+    /**
+     * Unpack the movie and return a buffer with the unpacked SWF.
+     * The output is empty when it was unable to unpack it.
+     */
+    swf::StreamWriter unpack();
     void read_movie();
     void resolve_order();
     void resolve_binaries();
