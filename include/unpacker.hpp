@@ -8,10 +8,11 @@ namespace athes::unpack {
 using namespace swf::abc::parser;
 using AbcFile = swf::abc::AbcFile;
 
-constexpr const char* version = "0.1.1";
+constexpr const char* version = "0.2.0";
 
 class Unpacker {
 public:
+    swf::Swf movie;
     std::vector<std::string> order;
     std::unordered_map<std::string, swf::DefineBinaryDataTag*> binaries;
 
@@ -45,7 +46,6 @@ protected:
     void resolve_keymap(std::shared_ptr<Instruction> ins);
     void resolve_methods();
 
-    swf::Swf movie;
     std::shared_ptr<AbcFile> abc;
     std::unique_ptr<swf::StreamReader> stream;
     std::vector<uint8_t> buffer;
