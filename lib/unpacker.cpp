@@ -14,15 +14,22 @@ void download(std::string url, std::vector<uint8_t>& buffer) {
 }
 
 Unpacker::Unpacker(std::unique_ptr<swf::StreamReader> stream)
-    : buffer(), stream(std::move(stream)) { }
+    : buffer(), stream(std::move(stream)) {
+    order    = {};
+    binaries = {};
+}
 
 Unpacker::Unpacker(std::vector<uint8_t> buffer) : buffer(buffer) {
-    stream = std::make_unique<swf::StreamReader>(buffer);
+    stream   = std::make_unique<swf::StreamReader>(buffer);
+    order    = {};
+    binaries = {};
 }
 
 Unpacker::Unpacker(std::string url) : buffer() {
     download(url, buffer);
-    stream = std::make_unique<swf::StreamReader>(buffer);
+    stream   = std::make_unique<swf::StreamReader>(buffer);
+    order    = {};
+    binaries = {};
 }
 
 const size_t Unpacker::size() {
