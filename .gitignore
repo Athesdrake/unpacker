@@ -1,1 +1,4 @@
-build/
+/target
+Cargo.lock
+
+*.swf

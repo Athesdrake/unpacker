@@ -1,7 +1,6 @@
 *
-!include/
 !src/
-!CMakeLists.txt
 !LICENSE
 !README.md
-!vcpkg.json
+!Cargo.toml
+!Cargo.lock

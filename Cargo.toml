@@ -1,0 +1,16 @@
+[package]
+name = "unpacker"
+version = "0.3.0"
+edition = "2021"
+
+[profile.release]
+debug = 1
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+rabc = { git = "https://github.com/Athesdrake/rabc.git", tag = "v0.1.1" }
+clap = { version = "4.4", features = ["derive"] }
+log = "0.4"
+stderrlog = "0.5.4"
+reqwest = { version = "0.11", features = ["blocking"] }
