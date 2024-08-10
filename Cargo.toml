@@ -10,7 +10,7 @@ debug = 1
 
 [dependencies]
 rabc = { git = "https://github.com/Athesdrake/rabc.git", tag = "v0.1.1" }
-clap = { version = "4.4", features = ["derive"] }
-log = "0.4"
-stderrlog = "0.5.4"
-reqwest = { version = "0.11", features = ["blocking"] }
+clap = { version = "4.5.15", features = ["derive"] }
+log = "0.4.22"
+stderrlog = "0.6.0"
+reqwest = { version = "0.12.5", features = ["blocking"] }
