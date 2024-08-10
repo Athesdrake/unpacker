@@ -5,7 +5,7 @@ const STRING_SEQUENCE: &[OpCode] = &[OpCode::GetLocal0, OpCode::CallProperty];
 
 pub struct StringFinder<'a> {
     pub prog: &'a mut InsIterator<'a>,
-    methods: &'a HashMap<u32, u8>,
+    pub methods: &'a HashMap<u32, u8>,
 }
 
 impl<'a> StringFinder<'a> {
@@ -19,11 +19,10 @@ impl<'a> StringFinder<'a> {
 
     pub fn match_target(&mut self, target: &str) -> bool {
         for target_byte in target.bytes() {
-            match self.next_char() {
-                Some(b) if self.methods[&b] == target_byte => {
+            if let Some(b) = self.next_char() {
+                if self.methods.get(&b) == Some(&target_byte) {
                     continue;
                 }
-                _ => {}
             }
             self.skip_string();
             return false;
@@ -32,7 +31,7 @@ impl<'a> StringFinder<'a> {
     }
 
     pub fn next_string(&mut self) -> bool {
-        !self.prog.skip_until_seq(STRING_SEQUENCE).is_none()
+        self.prog.skip_until_seq(STRING_SEQUENCE).is_some()
     }
     fn skip_string(&mut self) {
         while self.is_add_string() {
@@ -53,13 +52,10 @@ impl<'a> StringFinder<'a> {
         }
         self.prog.next();
 
-        let mut prop = None;
-        if let Op::CallProperty(op) = &self.prog.get().op {
-            prop = Some(op.property)
-        } else {
-            return prop;
+        let Op::CallProperty(op) = &self.prog.get().op else {
+            return None;
         };
-        self.prog.next().and(prop)
+        self.prog.next().and(Some(op.property))
     }
 
     pub fn build(&mut self) -> Vec<u8> {

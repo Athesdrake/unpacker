@@ -43,7 +43,7 @@ fn main() -> Result<()> {
         Movie::from_url(&args.input)?
     } else {
         log::info!("Reading file {}", args.input);
-        Movie::from_file(File::open(args.input)?)?
+        Movie::from_file(&args.input)?
     };
     timings.push(("Reading file", boot.elapsed()));
     let mut unp = Unpacker::new(&movie)?;

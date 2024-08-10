@@ -10,8 +10,8 @@ pub use unpacker::Unpacker;
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used)]
 mod tests {
-    use reqwest;
     use std::fs::File;
 
     #[test]

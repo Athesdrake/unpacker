@@ -11,6 +11,7 @@ use rabc::{
 };
 use std::{collections::HashMap, io::Write};
 
+#[non_exhaustive]
 pub struct Unpacker<'a> {
     pub movie: &'a Movie,
     pub abc: &'a AbcFile,
@@ -27,12 +28,12 @@ impl<'a> Unpacker<'a> {
             movie,
             abc: &movie
                 .frame1()
-                .ok_or(Error::missing("Movie does not have a frame1"))?
+                .ok_or_else(|| Error::missing("Movie does not have a frame1"))?
                 .abcfile,
             keymap: None,
-            methods: Default::default(),
-            order: Default::default(),
-            binaries: Default::default(),
+            methods: HashMap::default(),
+            order: Vec::default(),
+            binaries: HashMap::default(),
         })
     }
 
@@ -43,32 +44,28 @@ impl<'a> Unpacker<'a> {
         self.write_binaries(writer)
     }
 
-    fn resolve_keymap(&mut self, instructions: &Vec<Instruction>) -> Result<()> {
+    fn resolve_keymap(&mut self, instructions: &Vec<Instruction>) {
         let mut prog = instructions.iter_prog();
         while prog.has_next() && prog.skip_until(OpCode::PushString).is_some() {
             if let Op::PushString(op) = &prog.get().op {
-                self.keymap = self
-                    .abc
-                    .cpool
-                    .strings
-                    .get(op.value as usize)
-                    .map(|s| s.clone());
+                self.keymap = self.abc.cpool.strings.get(op.value as usize).cloned();
                 break;
             }
         }
-        Ok(())
     }
     fn resolve_methods(&mut self) -> Result<()> {
         let keymap = self
             .keymap
             .clone()
-            .ok_or(Error::missing("Keymap not found"))?;
+            .ok_or_else(|| Error::missing("Keymap not found"))?;
 
         // Get all methods taking a ...rest argument
         // Those methods return a single character from the keymap
         for tr in &self.abc.classes[0].itraits {
             if let Trait::Method(tr) = tr {
-                let method = &self.abc.methods[tr.index as usize];
+                let Some(method) = self.abc.methods.get(tr.index as usize) else {
+                    continue;
+                };
                 if method.need_rest() && method.max_stack == 2 {
                     let instructions = method.parse()?;
                     let mut prog = instructions.iter_prog();
@@ -94,7 +91,7 @@ impl<'a> Unpacker<'a> {
         let class = self.abc.get_class(0)?;
         // Get the keymap from the cinit method
         // then resolve the methods return value
-        self.resolve_keymap(&self.abc.get_method(class.cinit)?.parse()?)?;
+        self.resolve_keymap(&self.abc.get_method(class.cinit)?.parse()?);
         self.resolve_methods()?;
 
         let instructions = self.abc.get_method(class.iinit)?.parse()?;
@@ -103,7 +100,7 @@ impl<'a> Unpacker<'a> {
         finder
             .prog
             .skip_until(OpCode::ConstructSuper)
-            .ok_or(Error::missing("construct_super was not found"))?;
+            .ok_or_else(|| Error::missing("construct_super was not found"))?;
 
         while finder.next_string() {
             if finder.match_target("writeBytes") {
@@ -118,8 +115,8 @@ impl<'a> Unpacker<'a> {
         for tag in self.movie.binaries() {
             if let Some(symbol) = self.movie.symbols.get(&tag.char_id) {
                 // Remove the prefix
-                if let Some(name) = symbol.split_once("_").and_then(|(_, s)| Some(s)) {
-                    self.binaries.insert(name.to_string(), &tag.data);
+                if let Some(name) = symbol.split_once('_').map(|(_, s)| s) {
+                    self.binaries.insert(name.to_owned(), &tag.data);
                 }
             }
         }

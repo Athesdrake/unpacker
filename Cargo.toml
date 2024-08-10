@@ -14,3 +14,17 @@ clap = { version = "4.5.15", features = ["derive"] }
 log = "0.4.22"
 stderrlog = "0.6.0"
 reqwest = { version = "0.12.5", features = ["blocking"] }
+
+[workspace.lints.clippy]
+pedantic = { level = "warn", priority = -2 }
+restriction = { level = "warn", priority = -1 }
+# Allowed pedantic lints
+module_name_repetitions = "allow"
+missing_errors_doc = "allow"
+# Disallowed restriction lints
+or_fun_call = "warn"
+str_to_string = "warn"
+inconsistent_struct_constructor = "warn"
+print_stdout = "warn"
+print_stderr = "warn"
+use_self = "warn"
