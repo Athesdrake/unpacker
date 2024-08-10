@@ -1,37 +1,38 @@
-use std::{borrow, io};
+use std::io;
+use thiserror::Error;
 
-pub type Result<T> = std::result::Result<T, Error>;
+pub type Result<T> = std::result::Result<T, UnpackerError>;
 
-#[derive(Debug)]
-pub enum Error {
-    IoError(io::Error),
+#[derive(Debug, Error)]
+pub enum MissingError {
+    #[error("This movie file does not have a frame1")]
+    MissingFrame1,
+    #[error("Cannot resolve methods: keymap was not found.")]
+    MissingKeymap,
+    #[error("Cannot resolve order: construct_super was not found.")]
+    MissingSuper,
+}
+
+#[derive(Debug, Error)]
+pub enum UnpackerError {
+    #[error("IO error: {0}")]
+    IoError(#[from] io::Error),
+    #[error("RABC error: {0:?}")]
     RabcError(rabc::error::Error),
-    Missing(borrow::Cow<'static, str>),
-    IndexError(),
+    #[error("utf8 error: {0}")]
+    Utf8Error(#[from] std::string::FromUtf8Error),
+
+    #[error("Index error in keymap: {0}")]
+    KeymapIndexError(u8),
+    #[error(transparent)]
+    Missing(#[from] MissingError),
 }
 
-impl Error {
-    #[inline]
-    pub fn missing(message: impl Into<borrow::Cow<'static, str>>) -> Self {
-        Self::Missing(message.into())
-    }
-}
-
-impl From<io::Error> for Error {
-    fn from(error: io::Error) -> Self {
-        Self::IoError(error)
-    }
-}
-impl From<rabc::error::Error> for Error {
+impl From<rabc::error::Error> for UnpackerError {
     fn from(error: rabc::error::Error) -> Self {
         match error {
             rabc::error::Error::IoError(error) => Self::IoError(error),
             error => Self::RabcError(error),
         }
-    }
-}
-impl From<std::string::FromUtf8Error> for Error {
-    fn from(error: std::string::FromUtf8Error) -> Self {
-        Self::RabcError(rabc::error::Error::FromUtf8Error(error))
     }
 }

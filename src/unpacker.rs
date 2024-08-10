@@ -1,5 +1,5 @@
 use crate::{
-    error::{Error, Result},
+    error::{MissingError, Result, UnpackerError},
     string_finder::StringFinder,
 };
 use rabc::{
@@ -26,10 +26,7 @@ impl<'a> Unpacker<'a> {
     pub fn new(movie: &'a Movie) -> Result<Self> {
         Ok(Unpacker {
             movie,
-            abc: &movie
-                .frame1()
-                .ok_or_else(|| Error::missing("Movie does not have a frame1"))?
-                .abcfile,
+            abc: &movie.frame1().ok_or(MissingError::MissingFrame1)?.abcfile,
             keymap: None,
             methods: HashMap::default(),
             order: Vec::default(),
@@ -54,10 +51,7 @@ impl<'a> Unpacker<'a> {
         }
     }
     fn resolve_methods(&mut self) -> Result<()> {
-        let keymap = self
-            .keymap
-            .clone()
-            .ok_or_else(|| Error::missing("Keymap not found"))?;
+        let keymap = self.keymap.clone().ok_or(MissingError::MissingKeymap)?;
 
         // Get all methods taking a ...rest argument
         // Those methods return a single character from the keymap
@@ -78,7 +72,7 @@ impl<'a> Unpacker<'a> {
                                 *keymap
                                     .as_bytes()
                                     .get(op.value as usize)
-                                    .ok_or(Error::IndexError())?,
+                                    .ok_or_else(|| UnpackerError::KeymapIndexError(op.value))?,
                             );
                         }
                     }
@@ -100,7 +94,7 @@ impl<'a> Unpacker<'a> {
         finder
             .prog
             .skip_until(OpCode::ConstructSuper)
-            .ok_or_else(|| Error::missing("construct_super was not found"))?;
+            .ok_or(MissingError::MissingSuper)?;
 
         while finder.next_string() {
             if finder.match_target("writeBytes") {
