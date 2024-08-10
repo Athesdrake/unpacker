@@ -9,7 +9,7 @@ debug = 1
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-rabc = { git = "https://github.com/Athesdrake/rabc.git", tag = "v0.1.1" }
+rabc = { git = "https://github.com/Athesdrake/rabc.git", tag = "v0.2.1" }
 clap = { version = "4.5.15", features = ["derive"] }
 log = "0.4.22"
 stderrlog = "0.6.0"
