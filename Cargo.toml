@@ -1,24 +1,24 @@
-[package]
-name = "unpacker"
+[workspace]
+members = ["unpacker", "unpacker-cli"]
+resolver = "2"
+
+[workspace.package]
 version = "0.3.0"
 edition = "2021"
+rust-version = "1.81"
 
-[profile.release]
-debug = 1
+[workspace.dependencies]
+unpacker = { path = "unpacker" }
+unpacker-cli = { path = "unpacker-cli" }
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
-[dependencies]
 rabc = { git = "https://github.com/Athesdrake/rabc.git", tag = "v0.2.1" }
-clap = { version = "4.5.15", features = ["derive"] }
 log = "0.4.22"
 stderrlog = "0.6.0"
-reqwest = { version = "0.12.5", features = ["blocking"] }
 thiserror = "1.0.63"
 
 [workspace.lints.clippy]
 pedantic = { level = "warn", priority = -2 }
-restriction = { level = "warn", priority = -1 }
+# restriction = { level = "warn", priority = -1 }
 # Allowed pedantic lints
 module_name_repetitions = "allow"
 missing_errors_doc = "allow"

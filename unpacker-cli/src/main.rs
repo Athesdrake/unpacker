@@ -1,4 +1,6 @@
+pub mod movie;
 use clap::Parser;
+use movie::MovieFromUrl;
 use rabc::Movie;
 use std::{fs::File, time::Instant};
 use unpacker::{error::Result, MovieReader, Unpacker};
@@ -81,4 +83,19 @@ fn main() -> Result<()> {
         log::debug!("Total: {:.2?}", boot.elapsed());
     }
     Ok(())
+}
+
+#[cfg(test)]
+#[allow(clippy::unwrap_used)]
+mod tests {
+    use std::fs::File;
+
+    #[test]
+    fn test_download() {
+        let mut file = File::create("Transformice.swf").unwrap();
+        reqwest::blocking::get("https://www.transformice.com/Transformice.swf")
+            .unwrap()
+            .copy_to(&mut file)
+            .unwrap();
+    }
 }

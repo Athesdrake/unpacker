@@ -1,0 +1,12 @@
+[package]
+name = "unpacker"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+rabc = { workspace = true }
+thiserror = { workspace = true }
+
+[lints]
+workspace = true
