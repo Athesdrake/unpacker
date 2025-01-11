@@ -72,7 +72,7 @@ impl<'a> Unpacker<'a> {
                                 *keymap
                                     .as_bytes()
                                     .get(op.value as usize)
-                                    .ok_or_else(|| UnpackerError::KeymapIndexError(op.value))?,
+                                    .ok_or(UnpackerError::KeymapIndexError(op.value))?,
                             );
                         }
                     }
