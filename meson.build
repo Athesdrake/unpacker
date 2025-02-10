@@ -2,7 +2,7 @@ project(
     'unpacker',
     'cpp',
     default_options: ['cpp_std=c++17'],
-    version: '0.2.0',
+    version: '0.2.1',
 )
 
 swflib = dependency('swflib')
@@ -27,4 +27,5 @@ executable(
     include_directories: incdir,
     dependencies: [swflib, argparse, fmt],
     link_with: unpack,
+    install: true,
 )
