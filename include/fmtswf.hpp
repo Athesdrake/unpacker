@@ -1,12 +1,12 @@
 #pragma once
-#include <abc/parser/Parser.hpp>
 #include <fmt/format.h>
+#include <fmt/ranges.h>
 #include <swflib.hpp>
+#include <abc/parser/Parser.hpp>
 
-template <> struct fmt::formatter<std::shared_ptr<swf::abc::AbcFile>> {
-    constexpr auto parse(format_parse_context& ctx) -> decltype(ctx.begin()) { return ctx.end(); }
-    template <typename FormatContext>
-    auto format(const std::shared_ptr<swf::abc::AbcFile>& abc, FormatContext& ctx) {
+template <> struct fmt::formatter<std::shared_ptr<swf::abc::AbcFile>> : formatter<string_view> {
+    auto format(const std::shared_ptr<swf::abc::AbcFile>& abc, format_context& ctx) const
+        -> format_context::iterator {
         return format_to(
             ctx.out(),
             "\t[AbcFile] version {major}.{minor}"
@@ -35,9 +35,8 @@ template <> struct fmt::formatter<std::shared_ptr<swf::abc::AbcFile>> {
             "minor"_a      = abc->minor_version);
     }
 };
-template <> struct fmt::formatter<swf::DoABCTag> {
-    constexpr auto parse(format_parse_context& ctx) -> decltype(ctx.begin()) { return ctx.end(); }
-    template <typename FormatContext> auto format(swf::DoABCTag& tag, FormatContext& ctx) {
+template <> struct fmt::formatter<swf::DoABCTag> : formatter<string_view> {
+    auto format(swf::DoABCTag& tag, format_context& ctx) const -> format_context::iterator {
         return format_to(
             ctx.out(),
             "\t[{tagname}:0x{tagid:0>2x}] \"{name}\" lazy:{lazy}\n{abc}\n",

@@ -5,7 +5,8 @@
 namespace athes::unpack {
 void download(std::string url, std::vector<uint8_t>& buffer) {
     auto r = cpr::Get(
-        cpr::Url { url }, cpr::WriteCallback([&buffer](std::string data, intptr_t userdata) {
+        cpr::Url { url },
+        cpr::WriteCallback([&buffer](const std::string_view& data, intptr_t userdata) {
             buffer.insert(buffer.end(), data.begin(), data.end());
             return true;
         }));
