@@ -8,7 +8,7 @@ namespace athes::unpack {
 using namespace swf::abc::parser;
 using AbcFile = swf::abc::AbcFile;
 
-constexpr const char* version = "0.2.1";
+constexpr const char* version = "0.2.2";
 
 class Unpacker {
 public:
