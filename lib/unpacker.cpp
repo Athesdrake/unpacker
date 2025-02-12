@@ -16,7 +16,7 @@ void download(std::string url, std::vector<uint8_t>& buffer) {
 }
 
 Unpacker::Unpacker(std::unique_ptr<swf::StreamReader> stream)
-    : buffer(), stream(std::move(stream)) {
+    : stream(std::move(stream)), buffer() {
     order    = {};
     binaries = {};
 }
