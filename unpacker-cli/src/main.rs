@@ -66,7 +66,7 @@ fn main() -> Result<()> {
     log::info!("Writing to file {}", args.output);
     let mut file = File::create(args.output)?;
     if let Some(missing) = unp.write_binaries(&mut file)? {
-        log::error!("Unable to find binary with name: {}", missing);
+        log::error!("Unable to find binary with name: {missing}");
         return Ok(());
     }
     timings.push(("Writing file", boot.elapsed()));

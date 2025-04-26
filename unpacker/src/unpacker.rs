@@ -14,7 +14,7 @@ use std::{collections::HashMap, io::Write};
 #[non_exhaustive]
 pub struct Unpacker<'a> {
     pub movie: &'a Movie,
-    pub abc: &'a AbcFile,
+    pub abcfile: &'a AbcFile,
 
     pub keymap: Option<String>,
     pub methods: HashMap<u32, u8>,
@@ -26,7 +26,7 @@ impl<'a> Unpacker<'a> {
     pub fn new(movie: &'a Movie) -> Result<Self> {
         Ok(Unpacker {
             movie,
-            abc: &movie.frame1().ok_or(MissingError::MissingFrame1)?.abcfile,
+            abcfile: &movie.frame1().ok_or(MissingError::MissingFrame1)?.abcfile,
             keymap: None,
             methods: HashMap::default(),
             order: Vec::default(),
@@ -43,9 +43,9 @@ impl<'a> Unpacker<'a> {
 
     fn resolve_keymap(&mut self, instructions: &Vec<Instruction>) {
         let mut prog = instructions.iter_prog();
-        while prog.has_next() && prog.skip_until(OpCode::PushString).is_some() {
+        while prog.has_next() && prog.skip_until(&OpCode::PushString).is_some() {
             if let Op::PushString(op) = &prog.get().op {
-                self.keymap = self.abc.cpool.strings.get(op.value as usize).cloned();
+                self.keymap = self.abcfile.cpool.get_str(op.value).ok().cloned();
                 break;
             }
         }
@@ -55,9 +55,9 @@ impl<'a> Unpacker<'a> {
 
         // Get all methods taking a ...rest argument
         // Those methods return a single character from the keymap
-        for tr in &self.abc.classes[0].itraits {
+        for tr in &self.abcfile.abc.classes[0].itraits {
             if let Trait::Method(tr) = tr {
-                let Some(method) = self.abc.methods.get(tr.index as usize) else {
+                let Some(method) = self.abcfile.abc.methods.get(tr.index as usize) else {
                     continue;
                 };
                 if method.need_rest() && method.max_stack == 2 {
@@ -65,7 +65,7 @@ impl<'a> Unpacker<'a> {
                     let mut prog = instructions.iter_prog();
 
                     // Get the returned character
-                    if prog.skip_until(OpCode::PushByte).is_some() {
+                    if prog.skip_until(&OpCode::PushByte).is_some() {
                         if let Op::PushByte(op) = &prog.get().op {
                             self.methods.insert(
                                 tr.name,
@@ -82,18 +82,18 @@ impl<'a> Unpacker<'a> {
         Ok(())
     }
     pub fn resolve_order(&mut self) -> Result<()> {
-        let class = self.abc.get_class(0)?;
+        let class = self.abcfile.abc.get_class(0)?;
         // Get the keymap from the cinit method
         // then resolve the methods return value
-        self.resolve_keymap(&self.abc.get_method(class.cinit)?.parse()?);
+        self.resolve_keymap(&self.abcfile.abc.get_method(class.cinit)?.parse()?);
         self.resolve_methods()?;
 
-        let instructions = self.abc.get_method(class.iinit)?.parse()?;
+        let instructions = self.abcfile.abc.get_method(class.iinit)?.parse()?;
         let mut prog = instructions.iter_prog();
         let mut finder = StringFinder::new(&mut prog, &self.methods);
         finder
             .prog
-            .skip_until(OpCode::ConstructSuper)
+            .skip_until(&OpCode::ConstructSuper)
             .ok_or(MissingError::MissingSuper)?;
 
         while finder.next_string() {

@@ -7,14 +7,17 @@ version = "0.3.0"
 edition = "2021"
 rust-version = "1.81"
 
+[profile.release]
+debug = true
+
 [workspace.dependencies]
 unpacker = { path = "unpacker" }
 unpacker-cli = { path = "unpacker-cli" }
 
-rabc = { git = "https://github.com/Athesdrake/rabc.git", tag = "v0.2.2" }
-log = "0.4.24"
+rabc = { git = "https://github.com/Athesdrake/rabc.git", tag = "v0.3.0" }
+log = "0.4.27"
 stderrlog = "0.6.0"
-thiserror = "2.0.11"
+thiserror = "2.0.12"
 
 [workspace.lints.clippy]
 pedantic = { level = "warn", priority = -2 }

@@ -1,7 +1,7 @@
-use rabc::abc::parser::{InsIterator, Op, OpCode};
+use rabc::abc::parser::{opmatch::OpSeq, InsIterator, Op, OpCode};
 use std::collections::HashMap;
 
-const STRING_SEQUENCE: &[OpCode] = &[OpCode::GetLocal0, OpCode::CallProperty];
+const STRING_SEQUENCE: OpSeq<2> = OpSeq([OpCode::GetLocal0, OpCode::CallProperty]);
 
 pub struct StringFinder<'a> {
     pub prog: &'a mut InsIterator<'a>,
@@ -14,7 +14,7 @@ impl<'a> StringFinder<'a> {
     }
 
     pub fn is_add_string(&self) -> bool {
-        self.prog.is(OpCode::Add) || self.prog.is_sequence(STRING_SEQUENCE)
+        self.prog.is(&(OpCode::Add | STRING_SEQUENCE))
     }
 
     pub fn match_target(&mut self, target: &str) -> bool {
@@ -31,11 +31,11 @@ impl<'a> StringFinder<'a> {
     }
 
     pub fn next_string(&mut self) -> bool {
-        self.prog.skip_until_seq(STRING_SEQUENCE).is_some()
+        self.prog.skip_until(&STRING_SEQUENCE).is_some()
     }
     fn skip_string(&mut self) {
         while self.is_add_string() {
-            if self.prog.is(OpCode::Add) {
+            if self.prog.is(&OpCode::Add) {
                 self.prog.next();
             }
             self.prog.next();
@@ -47,12 +47,11 @@ impl<'a> StringFinder<'a> {
             return None;
         }
 
-        while self.prog.is(OpCode::Add) {
+        while self.prog.is(&OpCode::Add) {
             self.prog.next();
         }
-        self.prog.next();
 
-        let Op::CallProperty(op) = &self.prog.get().op else {
+        let Some(Op::CallProperty(op)) = self.prog.next_op() else {
             return None;
         };
         self.prog.next().and(Some(op.property))
@@ -60,9 +59,7 @@ impl<'a> StringFinder<'a> {
 
     pub fn build(&mut self) -> Vec<u8> {
         let mut str = Vec::new();
-        if !self.prog.is_sequence(STRING_SEQUENCE) {
-            self.next_string();
-        }
+        self.next_string();
 
         while let Some(idx) = self.next_char() {
             if let Some(byte) = self.methods.get(&idx) {
